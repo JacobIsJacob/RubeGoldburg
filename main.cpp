@@ -41,18 +41,37 @@ int main() {
     gpioSetPullUpDown(BTN_GREEN, PI_PUD_UP);
     gpioNoiseFilter(BTN_GREEN, 5000, 0);
 
+    // Various other GPIO setups for button, fan, presence sensor, etc
+
     gpioSetAlertFuncEx(BTN_GREEN, buttonAlert, ((void *) "Green"));
 
+    // Alert function for presense sensor state transition
 
     startTick = gpioTick();
 
     while (true) {
 
-        waitForButton();
+        // waitForPresence() (wait for snap)
 
+        // trigger the tumbler servo (gpioWrite)
+
+        // play the "start" sound
         cout << "Play Sound";
         system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
 
+
+        waitForButton();
+
+        // turn on the fan
+        // probably sleep for X seconds with fan turned on
+        // turn off the fan
+
+        // wait for 2nd button
+        // use servo to release pendulum
+        
+        // play some other sound
+        cout << "Play Sound";
+        system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
     }
 
 }
