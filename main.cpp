@@ -22,12 +22,16 @@ using namespace std;
 
 uint32_t startTick;
 
-int greenButtonCount = 0;
+int proxSensorCount = 0;
+int swingOverArmButtonCount = 0;
+int ziplineButtonCount = 0;
 
 void interruptHandler(int x);
 
-void waitForButton();
-void buttonAlert(int gpio, int level, uint32_t tick, void* user);
+void waitForProxSensor();
+void waitForSwingoverButton();
+void waitForZiplineButton();
+void sensorAlert(int gpio, int level, uint32_t tick, void* user);
 
 bool soundPlaying = false;
 
@@ -37,15 +41,35 @@ int main() {
     signal(SIGCONT, SIG_IGN);
     signal(SIGINT, interruptHandler);
 
-    gpioSetMode(BTN_GREEN, PI_INPUT);
-    gpioSetPullUpDown(BTN_GREEN, PI_PUD_UP);
-    gpioNoiseFilter(BTN_GREEN, 5000, 0);
+    //Set up swing-over arm button
+    gpioSetMode(SWINGOVER_ARM_BTN, PI_INPUT);
+    gpioSetPullUpDown(SWINGOVER_ARM_BTN, PI_PUD_UP);
+    gpioNoiseFilter(SWINGOVER_ARM_BTN, 5000, 0);
+
+    //Set up zipline button
+    gpioSetMode(ZIPLINE_BTN, PI_INPUT);
+    gpioSetPullUpDown(ZIPLINE_BTN, PI_PUD_UP);
+    gpioNoiseFilter(ZIPLINE_BTN, 5000, 0);
+
+    //Set up proximity sensor
+    gpioSetMode(PROX_SENSOR, PI_INPUT);
+    gpioNoiseFilter(PROX_SENSOR, 5000, 0);
+
+    //Set Tumbler Servo to neutral position
+    gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
+
+    //Set pendulum Servo to neutral position
+    gpioServo(PENDULUM_SERVO, NEUTRAL_PULSE_WIDTH);
 
     // Various other GPIO setups for button, fan, presence sensor, etc
 
-    gpioSetAlertFuncEx(BTN_GREEN, buttonAlert, ((void *) "Green"));
+    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "SwingOverArmButton"));
+    
+    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "ZiplineButton"));
 
-    // Alert function for presense sensor state transition
+    // Alert function for presence sensor state transition
+
+    gpioSetAlertFuncEx(PROX_SENSOR, sensorAlert, ((void *) "ProxSensor"));
 
     startTick = gpioTick();
 
@@ -53,22 +77,28 @@ int main() {
 
         // waitForPresence() (wait for snap)
 
-        // trigger the tumbler servo (gpioWrite)
+        // trigger the tumbler servo
+        gpioServo(TUMBLER_SERVO, OPEN_PULSE_WIDTH);
 
         // play the "start" sound
         cout << "Play Sound";
         system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
 
+        waitForProxSensor();
 
-        waitForButton();
+        waitForSwingoverButton();
 
         // turn on the fan
         // probably sleep for X seconds with fan turned on
         // turn off the fan
 
-        // wait for 2nd button
+        // wait for zipline button
+
+        waitForZiplineButton();
+
         // use servo to release pendulum
-        
+        gpioServo(PENDULUM_SERVO, OPEN_PULSE_WIDTH);
+
         // play some other sound
         cout << "Play Sound";
         system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
@@ -82,19 +112,47 @@ void interruptHandler(int x) {
     exit(0);
 }
 
+void waitForProxSensor() {
+    int count = proxSensorCount;
 
-void waitForButton() {
-    int count = greenButtonCount;
-
-    while (count == greenButtonCount) {
+    while (count == proxSensorCount) {
         usleep(10000);
     }
 }
 
-void buttonAlert(int gpio, int level, uint32_t tick, void* user) {
-    if (level && !strcmp((const char *) user, "Green")) {
-        ++greenButtonCount;
+void waitForSwingoverButton() {
+    int count = swingOverArmButtonCount;
+
+    while (count == swingOverArmButtonCount) {
+        usleep(10000);
     }
-   
-    cout << (const char *) user << " button " << (!level ? "released" : "pressed ") << " at " << tick << "\n";
 }
+
+void waitForZiplineButton() {
+    int count = ziplineButtonCount;
+
+    while (count == ziplineButtonCount) {
+        usleep(10000);
+    }
+}
+
+void sensorAlert(int gpio, int level, uint32_t tick, void* user) {
+
+    //triggers when button pressed, not when released
+    if (!(level || strcmp((const char *) user, "SwingOverArmButton"))) {
+        ++swingOverArmButtonCount;
+    }
+
+    //triggers when button pressed, not when released
+    if (!(level || strcmp((const char *) user, "ZiplineButton"))) {
+        ++ziplineButtonCount;
+    }
+
+    //triggers when proximity sensor detects something
+    if (level && !strcmp((const char *) user, "ProxSensor") && proxSensorCount < 1) {
+        ++proxSensorCount;
+    }
+
+    cout << (const char *) user << (!level ? "released" : "pressed ") << " at " << tick << "\n";
+}
+
