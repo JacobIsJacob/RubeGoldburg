@@ -13,11 +13,13 @@
 
 #define PENDULUM_SERVO 24
 
+#define FAN 26
+
 #define PROX_SENSOR 27
 
 #define NEUTRAL_PULSE_WIDTH 1500
 
-#define OPEN_PULSE_WIDTH 2500
+#define OPEN_PULSE_WIDTH 2000
 
 extern uint32_t startTick;
 

@@ -41,19 +41,23 @@ int main() {
     signal(SIGCONT, SIG_IGN);
     signal(SIGINT, interruptHandler);
 
+    //Set up proximity sensor
+    gpioSetMode(PROX_SENSOR, PI_INPUT);
+    gpioNoiseFilter(PROX_SENSOR, 5000, 0);
+
     //Set up swing-over arm button
     gpioSetMode(SWINGOVER_ARM_BTN, PI_INPUT);
     gpioSetPullUpDown(SWINGOVER_ARM_BTN, PI_PUD_UP);
     gpioNoiseFilter(SWINGOVER_ARM_BTN, 5000, 0);
 
+    //Set up fan
+    gpioSetMode(FAN, PI_OUTPUT);
+    gpioWrite(FAN, 0);
+
     //Set up zipline button
     gpioSetMode(ZIPLINE_BTN, PI_INPUT);
     gpioSetPullUpDown(ZIPLINE_BTN, PI_PUD_UP);
     gpioNoiseFilter(ZIPLINE_BTN, 5000, 0);
-
-    //Set up proximity sensor
-    gpioSetMode(PROX_SENSOR, PI_INPUT);
-    gpioNoiseFilter(PROX_SENSOR, 5000, 0);
 
     //Set Tumbler Servo to neutral position
     gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
@@ -61,47 +65,52 @@ int main() {
     //Set pendulum Servo to neutral position
     gpioServo(PENDULUM_SERVO, NEUTRAL_PULSE_WIDTH);
 
-    // Various other GPIO setups for button, fan, presence sensor, etc
-
-    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "SwingOverArmButton"));
-    
-    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "ZiplineButton"));
-
     // Alert function for presence sensor state transition
-
     gpioSetAlertFuncEx(PROX_SENSOR, sensorAlert, ((void *) "ProxSensor"));
+
+    // Alert functions for the two buttons
+    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "SwingOverArmButton"));
+    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "ZiplineButton"));
 
     startTick = gpioTick();
 
     while (true) {
 
-        // waitForPresence() (wait for snap)
-
-        // trigger the tumbler servo
-        gpioServo(TUMBLER_SERVO, OPEN_PULSE_WIDTH);
-
-        // play the "start" sound
-        cout << "Play Sound";
-        system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
-
+        // Wait for presence (wait for snap)
         waitForProxSensor();
 
-        waitForSwingoverButton();
+        // Open the tumbler servo
+        gpioServo(TUMBLER_SERVO, OPEN_PULSE_WIDTH);
 
-        // turn on the fan
-        // probably sleep for X seconds with fan turned on
-        // turn off the fan
-
-        // wait for zipline button
-
-        waitForZiplineButton();
-
-        // use servo to release pendulum
-        gpioServo(PENDULUM_SERVO, OPEN_PULSE_WIDTH);
-
-        // play some other sound
+        // Play the "start" sound
         cout << "Play Sound";
         system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
+
+        // Wait for the arm to hit the first button
+        waitForSwingoverButton();
+
+        // Turn on the fan
+        gpioWrite(FAN, 1);
+
+        // Sleep for 10 seconds with fan turned on
+        gpioSleep(0, 10, 0);
+
+        // Turn off the fan
+        gpioWrite(FAN, 1);
+
+        // Wait for zipline button
+        waitForZiplineButton();
+
+        // Open servo to release pendulums
+        gpioServo(PENDULUM_SERVO, OPEN_PULSE_WIDTH);
+
+        // Play some other sound
+        cout << "Play Sound";
+        system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
+
+        // Reset Servos at the end
+        gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
+        gpioServo(PENDULUM_SERVO, NEUTRAL_PULSE_WIDTH);
     }
 
 }
