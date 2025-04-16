@@ -84,7 +84,7 @@ int main() {
 
         // Play the "start" sound
         cout << "Play Sound";
-        system("/usr/bin/aplay /home/jacob/robot25/fog_horn.wav");
+        system("/usr/bin/aplay /home/jacob/robot25/john_cena.wav");
 
         // Wait for the arm to hit the first button
         waitForSwingoverButton();
