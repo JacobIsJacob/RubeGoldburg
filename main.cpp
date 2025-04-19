@@ -72,6 +72,9 @@ int main() {
 
     while (true) {
 
+        // Wait for start button
+        waitForStartButton();
+        
         // Wait for presence (wait for snap)
         waitForProxSensor();
 
@@ -84,18 +87,6 @@ int main() {
 
         // Wait for the arm to hit the first button
         waitForSwingoverButton();
-
-        // Turn on the fan
-        gpioWrite(FAN, 1);
-
-        // Sleep for 10 seconds with fan turned on
-        gpioSleep(0, 10, 0);
-
-        // Turn off the fan
-        gpioWrite(FAN, 1);
-
-        // Wait for start button
-        waitForStartButton();
 
         // Open servo to release pendulums
         gpioServo(PENDULUM_SERVO, OPEN_PULSE_WIDTH);
