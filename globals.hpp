@@ -7,13 +7,11 @@
 
 #define SWINGOVER_ARM_BTN 17
 
-#define ZIPLINE_BTN 22
+#define START_BTN 22
 
 #define TUMBLER_SERVO 23
 
 #define PENDULUM_SERVO 24
-
-#define FAN 26
 
 #define PROX_SENSOR 27
 

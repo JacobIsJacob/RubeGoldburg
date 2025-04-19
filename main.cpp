@@ -24,13 +24,13 @@ uint32_t startTick;
 
 int proxSensorCount = 0;
 int swingOverArmButtonCount = 0;
-int ziplineButtonCount = 0;
+int startButtonCount = 0;
 
 void interruptHandler(int x);
 
 void waitForProxSensor();
 void waitForSwingoverButton();
-void waitForZiplineButton();
+void waitForStartButton();
 void sensorAlert(int gpio, int level, uint32_t tick, void* user);
 
 bool soundPlaying = false;
@@ -50,14 +50,10 @@ int main() {
     gpioSetPullUpDown(SWINGOVER_ARM_BTN, PI_PUD_UP);
     gpioNoiseFilter(SWINGOVER_ARM_BTN, 5000, 0);
 
-    //Set up fan
-    gpioSetMode(FAN, PI_OUTPUT);
-    gpioWrite(FAN, 0);
-
-    //Set up zipline button
-    gpioSetMode(ZIPLINE_BTN, PI_INPUT);
-    gpioSetPullUpDown(ZIPLINE_BTN, PI_PUD_UP);
-    gpioNoiseFilter(ZIPLINE_BTN, 5000, 0);
+    //Set up start button
+    gpioSetMode(START_BTN, PI_INPUT);
+    gpioSetPullUpDown(START_BTN, PI_PUD_UP);
+    gpioNoiseFilter(START_BTN, 5000, 0);
 
     //Set Tumbler Servo to neutral position
     gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
@@ -70,7 +66,7 @@ int main() {
 
     // Alert functions for the two buttons
     gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "SwingOverArmButton"));
-    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "ZiplineButton"));
+    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *) "StartButton"));
 
     startTick = gpioTick();
 
@@ -98,8 +94,8 @@ int main() {
         // Turn off the fan
         gpioWrite(FAN, 1);
 
-        // Wait for zipline button
-        waitForZiplineButton();
+        // Wait for start button
+        waitForStartButton();
 
         // Open servo to release pendulums
         gpioServo(PENDULUM_SERVO, OPEN_PULSE_WIDTH);
@@ -137,10 +133,10 @@ void waitForSwingoverButton() {
     }
 }
 
-void waitForZiplineButton() {
-    int count = ziplineButtonCount;
+void waitForStartButton() {
+    int count = startButtonCount;
 
-    while (count == ziplineButtonCount) {
+    while (count == startButtonCount) {
         usleep(10000);
     }
 }
@@ -153,8 +149,8 @@ void sensorAlert(int gpio, int level, uint32_t tick, void* user) {
     }
 
     //triggers when button pressed, not when released
-    if (!(level || strcmp((const char *) user, "ZiplineButton"))) {
-        ++ziplineButtonCount;
+    if (!(level || strcmp((const char *) user, "StartButton"))) {
+        ++startButtonCount;
     }
 
     //triggers when proximity sensor detects something
