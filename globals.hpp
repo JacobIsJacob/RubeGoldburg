@@ -15,9 +15,9 @@
 
 #define PROX_SENSOR 27
 
-#define NEUTRAL_PULSE_WIDTH 1500
+#define NEUTRAL_PULSE_WIDTH 500
 
-#define OPEN_PULSE_WIDTH 2000
+#define OPEN_PULSE_WIDTH 850
 
 extern uint32_t startTick;
 
