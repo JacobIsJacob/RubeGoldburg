@@ -1,6 +1,14 @@
 #ifndef CONSTANTS_HPP
 #define CONSTANTS_HPP
 
+#define FIRST_AVENGER 26
+
+#define SECOND_AVENGER 19
+//skip 13
+#define THIRD_AVENGER 6
+
+#define FOURTH_AVENGER 5
+
 #define LEFT_PWM 12
 
 #define RIGHT_PWM 13
