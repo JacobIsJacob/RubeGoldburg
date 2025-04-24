@@ -25,6 +25,7 @@ uint32_t startTick;
 int proxSensorCount = 0;
 int swingOverArmButtonCount = 0;
 int startButtonCount = 0;
+double remainingSeconds = 0;
 
 void interruptHandler(int x);
 
@@ -73,8 +74,8 @@ int main()
     // Set Tumbler Servo to neutral position
     gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
 
-    // Set pendulum Servo to neutral position
-    gpioServo(PENDULUM_SERVO, NEUTRAL_PULSE_WIDTH);
+    // Set pendulum Servo to CLOSED position
+    gpioServo(PENDULUM_SERVO, CLOSED_PULSE_WIDTH);
 
     // Alert function for presence sensor state transition
     gpioSetAlertFuncEx(PROX_SENSOR, sensorAlert, ((void *)"ProxSensor"));
@@ -97,86 +98,105 @@ int main()
         // Record the start time
         startTick = gpioTick();
 
-        // Open the tumbler servo
-        gpioServo(TUMBLER_SERVO, OPEN_PULSE_WIDTH);
+        // Wait for snap
+        gpioSleep(0, 1, 0);
 
         // Play the tumbler sound
-        cout << "Play Sound";
-        void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/john_cena.wav", 10);
+        cout << "Play Wongy Sound";
+        void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/Wong_infinity_stones.wav", 15);
+
+        // Wait for Wong
+        gpioSleep(0, 6, 0);
+
+        // Open the tumbler servo
+        gpioServo(TUMBLER_SERVO, TUMBLER_RELEASE_PULSE_WIDTH);
 
         // Wait for the arm to hit the first button
         waitForSwingoverButton();
 
-        // If run time is less than 90 seconds, play music for the remaining time plus 5 seconds
-        if ((gpioTick() - startTick) < 90000000)
+        // Play Shpooder-Man sounds
+        cout << "Play Groan Sound";
+        system("/usr/bin/aplay /home/jacob/RubeGoldberg/groan.wav");
+
+        cout << "Play Spiderman We're the Avengers Sound";
+        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Spiderman_Avengers.wav");
+
+        // Calculate remaining time in seconds
+        double remainingSeconds = 100 - ((gpioTick() - startTick) / 1000000);
+
+        // If there are more than 0 seconds left, play music in the background for the remaining time plus 5 seconds
+        if (remainingSeconds > 0)
         {
-            double remainingSeconds = (gpioTick() - startTick) / 1000000;
             int waitTime = (int)round(remainingTime + 5);
 
             // Play the background sound
             cout << "Play Background Sound";
-            void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/john_cena.wav", waitTime);
+            void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/Avengers_theme", waitTime);
         }
 
-        // While run time is less than 95 seconds, play taglines
-        while ((gpioTick() - startTick) < 90000000)
-        {
-            // light up first light, play sound, then turn off the light
-            gpioWrite(FIRST_AVENGER, 1);
-            cout << "Play First Avenger Sound";
-            system("/usr/bin/aplay /home/jacob/RubeGoldberg/john_cena.wav");
+        // Wait a bit before playing first tagline
+        gpioSleep(0, 5, 0);
 
-            gpioWrite(FIRST_AVENGER, 0);
+        // light up first light, play sound, then turn off the light
+        gpioWrite(IRONMAN, 1);
+        cout << "Play IRONMAN Sound";
+        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Iron_Man.wav");
+        gpioWrite(IRONMAN, 0);
 
-            // Light up second light, play sound, then turn off the light
-            gpioWrite(SECOND_AVENGER, 1);
-            cout << "Play Second Avenger Sound";
-            system("/usr/bin/aplay /home/jacob/RubeGoldberg/john_cena.wav");
+        // Give a bit of rest between Taglines
+        gpioSleep(0, 5, 0);
 
-            gpioWrite(SECOND_AVENGER, 0);
+        // Light up second light, play sound, then turn off the light
+        gpioWrite(HULK, 1);
+        cout << "Play HULK Sound";
+        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Hulk_smash.wav");
+        gpioWrite(HULK, 0);
 
-            // Light up third light, play sound, then turn off the light
-            gpioWrite(THIRD_AVENGER, 1);
-            cout << "Play Third Avenger Sound";
-            system("/usr/bin/aplay /home/jacob/RubeGoldberg/john_cena.wav");
+        // Give a bit of rest between Taglines
+        gpioSleep(0, 5, 0);
 
-            gpioWrite(THIRD_AVENGER, 0);
+        // Light up third light, play sound, then turn off the light
+        gpioWrite(THOR, 1);
+        cout << "Play THOR Sound";
+        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Thor_another.wav");
+        gpioWrite(THOR, 0);
 
-            // Light up fourth light, play sound, then turn off the light
-            gpioWrite(FOURTH_AVENGER, 1);
-            cout << "Play Fourth Avenger Sound";
-            system("/usr/bin/aplay /home/jacob/RubeGoldberg/john_cena.wav");
+        // Give a bit of rest between Taglines
+        gpioSleep(0, 5, 0);
 
-            gpioWrite(FOURTH_AVENGER, 0);
-        }
+        // Light up fourth light, play sound, but leave the light on
+        gpioWrite(CAPTN_AMERICA, 1);
+        cout << "Play CAPTN_AMERICA Sound";
+        void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/Avengers_assemble.wav", 20);
 
-        // Play final sound
-        cout << "Play Fourth Avenger Sound";
-        system("/usr/bin/aplay /home/jacob/RubeGoldberg/john_cena.wav");
+        // Let the the Captain cook
+        gpioSleep(0, 8, 0);
 
         // Turn on all lights
-        gpioWrite(FIRST_AVENGER, 1);
-        gpioWrite(SECOND_AVENGER, 1);
-        gpioWrite(THIRD_AVENGER, 1);
-        gpioWrite(FOURTH_AVENGER, 1);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 1);
+        gpioWrite(THOR, 1);
+
+        // Let the Avengers Assemble
+        gpioSleep(0, 10, 0);
 
         // Open servo to release pendulums
         gpioServo(PENDULUM_SERVO, OPEN_PULSE_WIDTH);
 
-        // Turn off all lights after waiting 2 seconds
-        gpioSleep(0, 2, 0);
+        // Turn off all lights after waiting 1 second
+        gpioSleep(0, 1, 0);
 
-        gpioWrite(FIRST_AVENGER, 0);
-        gpioWrite(SECOND_AVENGER, 0);
-        gpioWrite(THIRD_AVENGER, 0);
-        gpioWrite(FOURTH_AVENGER, 0);
+        gpioWrite(IRONMAN, 0);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 0);
+        gpioWrite(CAPTN_AMERICA 0);
 
-        // Wait a bit to let people recover from their amazement
-        gpioSleep(0, 2, 0);
+        // Let people recover from their amazement
+        gpioSleep(0, 1, 0);
 
         // Reset Servos at the end
-        gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
-        gpioServo(PENDULUM_SERVO, NEUTRAL_PULSE_WIDTH);
+        gpioServo(TUMBLER_SERVO, CLOSED_PULSE_WIDTH);
+        gpioServo(PENDULUM_SERVO, CLOSED_PULSE_WIDTH);
     }
 }
 

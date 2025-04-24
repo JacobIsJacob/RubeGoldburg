@@ -1,13 +1,13 @@
 #ifndef CONSTANTS_HPP
 #define CONSTANTS_HPP
 
-#define FIRST_AVENGER 26
+#define IRONMAN 26
 
-#define SECOND_AVENGER 19
+#define HULK 19
 //skip 13
-#define THIRD_AVENGER 6
+#define THOR 6
 
-#define FOURTH_AVENGER 5
+#define CAPTN_AMERICA 5
 
 #define LEFT_PWM 12
 
@@ -23,9 +23,13 @@
 
 #define PROX_SENSOR 27
 
-#define NEUTRAL_PULSE_WIDTH 500
+#define CLOSED_PULSE_WIDTH 500
+
+#define NEUTRAL_PULSE_WIDTH 1500
 
 #define OPEN_PULSE_WIDTH 850
+
+#define TUMBLER_RELEASE_PULSE_WIDTH 2500
 
 extern uint32_t startTick;
 
