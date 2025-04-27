@@ -9,6 +9,8 @@
 #include <string>
 #include <fstream>
 #include <streambuf>
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include <cstring>
 #include <list>
@@ -33,7 +35,7 @@ void waitForProxSensor();
 void waitForSwingoverButton();
 void waitForStartButton();
 void sensorAlert(int gpio, int level, uint32_t tick, void *user);
-void playSoundWithTimeout(const char *path, int timeoutSeconds);
+pid_t playSoundInBackground(const char *path);
 
 bool soundPlaying = false;
 
@@ -43,6 +45,7 @@ int main()
 
     signal(SIGCONT, SIG_IGN);
     signal(SIGINT, interruptHandler);
+    signal(SIGCHLD, SIG_IGN);
 
     // Set up start button
     gpioSetMode(START_BTN, PI_INPUT);
@@ -59,17 +62,17 @@ int main()
     gpioNoiseFilter(SWINGOVER_ARM_BTN, 5000, 0);
 
     // Set up avenger lights
-    gpioSetMode(FIRST_AVENGER, PI_OUTPUT);
-    gpioWrite(FIRST_AVENGER, 0);
+    gpioSetMode(IRONMAN, PI_OUTPUT);
+    gpioWrite(IRONMAN, 0);
 
-    gpioSetMode(SECOND_AVENGER, PI_OUTPUT);
-    gpioWrite(SECOND_AVENGER, 0);
+    gpioSetMode(HULK, PI_OUTPUT);
+    gpioWrite(HULK, 0);
 
-    gpioSetMode(THIRD_AVENGER, PI_OUTPUT);
-    gpioWrite(THIRD_AVENGER, 0);
+    gpioSetMode(THOR, PI_OUTPUT);
+    gpioWrite(THOR, 0);
 
-    gpioSetMode(FOURTH_AVENGER, PI_OUTPUT);
-    gpioWrite(FOURTH_AVENGER, 0);
+    gpioSetMode(CAPTN_AMERICA, PI_OUTPUT);
+    gpioWrite(CAPTN_AMERICA, 0);
 
     // Set Tumbler Servo to neutral position
     gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
@@ -81,7 +84,7 @@ int main()
     gpioSetAlertFuncEx(PROX_SENSOR, sensorAlert, ((void *)"ProxSensor"));
 
     // Alert functions for the two buttons
-    gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *)"StartButton"));
+    gpioSetAlertFuncEx(START_BTN, sensorAlert, ((void *)"StartButton"));
     gpioSetAlertFuncEx(SWINGOVER_ARM_BTN, sensorAlert, ((void *)"SwingOverArmButton"));
 
     startTick = gpioTick();
@@ -103,99 +106,178 @@ int main()
 
         // Play the tumbler sound
         cout << "Play Wongy Sound";
-        void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/Wong_infinity_stones.wav", 15);
+        pid_t wongSoundPid = playSoundInBackground("/home/jacob/RubeGoldburg/Wong_infinity_stones.wav");
 
-        // Wait for Wong
-        gpioSleep(0, 6, 0);
+        gpioSleep(0, 7, 0);
 
         // Open the tumbler servo
-        gpioServo(TUMBLER_SERVO, TUMBLER_RELEASE_PULSE_WIDTH);
+        gpioServo(TUMBLER_SERVO, CLOSED_PULSE_WIDTH);
 
         // Wait for the arm to hit the first button
         waitForSwingoverButton();
 
+        // Stop background sound
+        kill(wongSoundPid, SIGKILL);
+
         // Play Shpooder-Man sounds
         cout << "Play Groan Sound";
-        system("/usr/bin/aplay /home/jacob/RubeGoldberg/groan.wav");
+        system("/usr/bin/aplay /home/jacob/RubeGoldburg/groan.wav");
 
         cout << "Play Spiderman We're the Avengers Sound";
-        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Spiderman_Avengers.wav");
+        system("/usr/bin/aplay /home/jacob/RubeGoldburg/Spiderman_Avengers.wav");
 
-        // Calculate remaining time in seconds
-        double remainingSeconds = 100 - ((gpioTick() - startTick) / 1000000);
-
-        // If there are more than 0 seconds left, play music in the background for the remaining time plus 5 seconds
-        if (remainingSeconds > 0)
-        {
-            int waitTime = (int)round(remainingTime + 5);
-
-            // Play the background sound
-            cout << "Play Background Sound";
-            void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/Avengers_theme", waitTime);
-        }
+        // Play the background sound
+        cout << "Play Background Sound";
+        pid_t soundPid = playSoundInBackground("/home/jacob/RubeGoldburg/Avengers_theme.wav");
 
         // Wait a bit before playing first tagline
-        gpioSleep(0, 5, 0);
+        gpioSleep(0, 2, 0);
 
         // light up first light, play sound, then turn off the light
         gpioWrite(IRONMAN, 1);
-        cout << "Play IRONMAN Sound";
-        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Iron_Man.wav");
+        cout << "Play IRONMAN Sound \n";
+        system("/usr/bin/aplay /home/jacob/RubeGoldburg/Iron_Man.wav");
         gpioWrite(IRONMAN, 0);
 
         // Give a bit of rest between Taglines
-        gpioSleep(0, 5, 0);
+        gpioSleep(0, 2, 0);
 
         // Light up second light, play sound, then turn off the light
         gpioWrite(HULK, 1);
-        cout << "Play HULK Sound";
-        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Hulk_smash.wav");
+        cout << "Play HULK Sound \n";
+        system("/usr/bin/aplay /home/jacob/RubeGoldburg/Hulk_smash.wav");
         gpioWrite(HULK, 0);
 
         // Give a bit of rest between Taglines
-        gpioSleep(0, 5, 0);
+        gpioSleep(0, 1, 0);
 
         // Light up third light, play sound, then turn off the light
         gpioWrite(THOR, 1);
-        cout << "Play THOR Sound";
-        system("/usr/bin/aplay /home/jacob/RubeGoldberg/Thor_another.wav");
+        cout << "Play THOR Sound \n";
+        system("/usr/bin/aplay /home/jacob/RubeGoldburg/Thor_another.wav");
         gpioWrite(THOR, 0);
 
         // Give a bit of rest between Taglines
-        gpioSleep(0, 5, 0);
+        gpioSleep(0, 1, 0);
+
+        // Stop background sound
+        kill(soundPid, SIGKILL);
 
         // Light up fourth light, play sound, but leave the light on
         gpioWrite(CAPTN_AMERICA, 1);
-        cout << "Play CAPTN_AMERICA Sound";
-        void playSoundWithTimeout("/usr/bin/aplay /home/jacob/RubeGoldberg/Avengers_assemble.wav", 20);
+        cout << "Play CAPTN_AMERICA Sound \n";
+        playSoundInBackground("/home/jacob/RubeGoldburg/Avengers_Assemble.wav");
 
         // Let the the Captain cook
         gpioSleep(0, 8, 0);
 
-        // Turn on all lights
+        // Alternate lights
+        gpioWrite(CAPTN_AMERICA, 1);
         gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 0);
         gpioWrite(HULK, 1);
         gpioWrite(THOR, 1);
+        gpioSleep(0,1,0);
 
-        // Let the Avengers Assemble
-        gpioSleep(0, 10, 0);
+        gpioWrite(CAPTN_AMERICA, 1);
+        gpioWrite(IRONMAN, 0);
+        gpioWrite(HULK, 1);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 1);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 1);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 1);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 0);
+        gpioWrite(HULK, 1);
+        gpioWrite(THOR, 1);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 1);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 0);
+        gpioWrite(HULK, 1);
+        gpioWrite(THOR, 1);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 1);
+        gpioWrite(IRONMAN, 0);
+        gpioWrite(HULK, 1);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 1);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 1);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 0);
+        gpioWrite(HULK, 1);
+        gpioWrite(THOR, 1);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 1);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 0);
+        gpioSleep(0,1,0);
+
+        gpioWrite(CAPTN_AMERICA, 0);
+        gpioWrite(IRONMAN, 1);
+        gpioWrite(HULK, 0);
+        gpioWrite(THOR, 1);
+        gpioSleep(0,1,0);
 
         // Open servo to release pendulums
         gpioServo(PENDULUM_SERVO, OPEN_PULSE_WIDTH);
 
         // Turn off all lights after waiting 1 second
-        gpioSleep(0, 1, 0);
+        gpioSleep(0, 2, 0);
 
         gpioWrite(IRONMAN, 0);
         gpioWrite(HULK, 0);
         gpioWrite(THOR, 0);
-        gpioWrite(CAPTN_AMERICA 0);
+        gpioWrite(CAPTN_AMERICA, 0);
 
         // Let people recover from their amazement
-        gpioSleep(0, 1, 0);
+        gpioSleep(0, 2, 0);
 
         // Reset Servos at the end
-        gpioServo(TUMBLER_SERVO, CLOSED_PULSE_WIDTH);
+        gpioServo(TUMBLER_SERVO, NEUTRAL_PULSE_WIDTH);
         gpioServo(PENDULUM_SERVO, CLOSED_PULSE_WIDTH);
     }
 }
@@ -241,13 +323,13 @@ void sensorAlert(int gpio, int level, uint32_t tick, void *user)
 {
 
     // triggers when button pressed, not when released
-    if (!(level || strcmp((const char *)user, "StartButton")))
+    if (level && !strcmp((const char *)user, "StartButton"))
     {
         ++startButtonCount;
     }
 
     // triggers when button pressed, not when released
-    if (!(level || strcmp((const char *)user, "SwingOverArmButton")))
+    if (level && !strcmp((const char *)user, "SwingOverArmButton"))
     {
         ++swingOverArmButtonCount;
     }
@@ -261,53 +343,26 @@ void sensorAlert(int gpio, int level, uint32_t tick, void *user)
     cout << (const char *)user << (!level ? "released" : "pressed ") << " at " << tick << "\n";
 }
 
-void playSoundWithTimeout(const char *path, int timeoutSeconds)
+pid_t playSoundInBackground(const char *path)
 {
     pid_t pid = fork();
 
     if (pid == -1)
     {
         perror("fork failed");
-        return;
+        return -1;
     }
 
     if (pid == 0)
     {
-        // Child process: play the sound
-        std::string command = "/usr/bin/aplay ";
-        command += path;
-        system(command.c_str());
-        _exit(0); // Use _exit to avoid flushing shared stdio buffers
-    }
-    else
-    {
-        // Parent: wait with timeout
-        int status;
-        int waited = 0;
+        // Child process: replace with aplay directly
+        execlp("aplay", "aplay", path, (char *)nullptr);
 
-        while (waited < timeoutSeconds)
-        {
-            pid_t result = waitpid(pid, &status, WNOHANG);
-            if (result == 0)
-            {
-                sleep(1);
-                waited++;
-            }
-            else if (result == pid)
-            {
-                // Child finished
-                return;
-            }
-            else
-            {
-                perror("waitpid error");
-                return;
-            }
-        }
-
-        // Timeout reached: kill child
-        std::cout << "Timeout reached. Killing sound process." << std::endl;
-        kill(pid, SIGKILL);
-        waitpid(pid, &status, 0); // Ensure cleanup
+        // If execlp fails
+        perror("execlp failed");
+        _exit(1);
     }
+
+    // Parent process: return child's PID
+    return pid;
 }

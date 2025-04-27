@@ -1,6 +1,8 @@
 #ifndef CONSTANTS_HPP
 #define CONSTANTS_HPP
 
+#define START_BTN 3
+
 #define IRONMAN 26
 
 #define HULK 19
@@ -14,8 +16,6 @@
 #define RIGHT_PWM 13
 
 #define SWINGOVER_ARM_BTN 17
-
-#define START_BTN 22
 
 #define TUMBLER_SERVO 23
 
